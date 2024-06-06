@@ -78,4 +78,16 @@ interface SplSubject
      */
     public function getSubjectData(): array;
 
+    /**
+     * 设置当前对象的操作类型
+     * @param $operate
+     * @return void
+     */
+    public function setSubjectOperate($operate): void;
+
+    /**
+     * 获得当前对象的完整data
+     * @return string
+     */
+    public function getSubjectOperate(): string;
 }
