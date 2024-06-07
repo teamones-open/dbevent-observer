@@ -42,6 +42,18 @@ interface SplSubject
     public function getSplUpdateData(): array;
 
     /**
+     * 设置更新字段新增的的数据
+     * @return array
+     */
+    public function getSplUpdateAddData(): array;
+
+    /**
+     * 获取更新字段删除的的数据
+     * @return array
+     */
+    public function getSplUpdateDeleteData(): array;
+
+    /**
      * 获得当前数据主键
      * @return null
      */

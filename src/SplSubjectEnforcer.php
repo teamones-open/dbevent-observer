@@ -12,6 +12,8 @@ trait SplSubjectEnforcer
     /** @var SplObserver[] */
     protected $observers = [];
     protected $splUpdateData = null;
+    protected $splUpdateAdd = null;
+    protected $splUpdateDelete = null;
     protected $splPrimaryId = null;
     protected $splOldData = null;
     protected $splNewData = null;
@@ -28,6 +30,8 @@ trait SplSubjectEnforcer
     public function clean()
     {
         $this->setSplUpdateData(null);
+        $this->setSplUpdateAddData(null);
+        $this->setSplUpdateDeleteData(null);
         $this->setSplPrimaryId(null);
         $this->setSplOldData(null);
         $this->setSplNewData(null);
@@ -44,6 +48,44 @@ trait SplSubjectEnforcer
     }
 
     /**
+     * 对比新老数据获取新增或者删除差异
+     * @param $changeAdd
+     * @param $changeDelete
+     * @param $key
+     * @param $oldVal
+     * @param $newVal
+     * @return void
+     */
+    private function contrastDataChanged(&$changeAdd, &$changeDelete, $key, $oldVal, $newVal)
+    {
+        if (is_array($newVal)) {
+            $newValArr = $newVal;
+        } else if (strpos($newVal, ',') !== false) {
+            $newValArr = explode(',', $newVal);
+            $oldVal = explode(',', $oldVal);
+        } else {
+            return;
+        }
+
+        // 获取两个数组不同的元素array_diff,是取第一数组存在，第二个数组不存在值
+        $diff = array_merge(array_diff($oldVal, $newValArr), array_diff($newValArr, $oldVal));
+
+        if (empty($diff)) {
+            return;
+        }
+
+        foreach ($diff as $item) {
+            if (in_array($item, $oldVal)) {
+                // 老数据存在，新数据不存在，被删除
+                $changeDelete[$key][] = $item;
+            } else {
+                // 老数据不存在，新数据存在，新增
+                $changeAdd[$key][] = $item;
+            }
+        }
+    }
+
+    /**
      * 对比出已经修改的属性
      * @param $old
      * @param $new
@@ -54,6 +96,9 @@ trait SplSubjectEnforcer
         $this->setSplNewData($new);
         $this->setSplOldData($old);
         $changed = [];
+        $changeAdd = [];
+        $changeDelete = [];
+
         // 对比json数据字段
         foreach ($new as $newKey => $newValue) {
             if (in_array($newKey, self::$splJsonFields)) {
@@ -65,6 +110,7 @@ trait SplSubjectEnforcer
                         || $oldJsonFields[$newJsonKey] != $newJsonValue
                     ) {
                         $changed[$newJsonKey] = $newJsonValue;
+                        $this->contrastDataChanged($changeAdd, $changeDelete, $newJsonKey, $oldJsonFields[$newJsonKey], $newJsonValue);
                     }
                 }
                 continue;
@@ -74,9 +120,13 @@ trait SplSubjectEnforcer
                 || $old[$newKey] != $newValue
             ) {
                 $changed[$newKey] = $newValue;
+                $this->contrastDataChanged($changeAdd, $changeDelete, $newKey, $old[$newKey], $newValue);
             }
         }
+
         $this->setSplUpdateData($changed);
+        $this->setSplUpdateAddData($changeAdd);
+        $this->setSplUpdateDeleteData($changeDelete);
         return $changed;
     }
 
@@ -105,6 +155,24 @@ trait SplSubjectEnforcer
     public function getSplUpdateData(): array
     {
         return $this->splUpdateData;
+    }
+
+    /**
+     * 设置更新字段新增的的数据
+     * @return array
+     */
+    public function getSplUpdateAddData(): array
+    {
+        return $this->splUpdateAdd;
+    }
+
+    /**
+     * 获取更新字段删除的的数据
+     * @return array
+     */
+    public function getSplUpdateDeleteData(): array
+    {
+        return $this->splUpdateDelete;
     }
 
     /**
@@ -171,6 +239,26 @@ trait SplSubjectEnforcer
     private function setSplUpdateData($splUpdateData): void
     {
         $this->splUpdateData = $splUpdateData;
+    }
+
+    /**
+     * 设置更新字段新增的的数据
+     * @param $splUpdateAdd
+     * @return void
+     */
+    private function setSplUpdateAddData($splUpdateAdd): void
+    {
+        $this->splUpdateAdd = $splUpdateAdd;
+    }
+
+    /**
+     * 设置更新字段删除的的数据
+     * @param $splUpdateDelete
+     * @return void
+     */
+    private function setSplUpdateDeleteData($splUpdateDelete): void
+    {
+        $this->splUpdateDelete = $splUpdateDelete;
     }
 
     /**
