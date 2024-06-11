@@ -47,6 +47,27 @@ trait SplSubjectEnforcer
         $this->observers[md5(serialize($observer))] = $observer;
     }
 
+
+    /**
+     * 处理值格式化
+     * @param $val
+     * @return array|false|string[]
+     */
+    private function dealValFormat($val)
+    {
+        if (!empty($val)) {
+            if (is_array($val)) {
+                return $val;
+            } else if (strpos($val, ',') !== false) {
+                return explode(',', $val);
+            } else {
+                return [$val];
+            }
+        } else {
+            return [];
+        }
+    }
+
     /**
      * 对比新老数据获取新增或者删除差异
      * @param $changeAdd
@@ -58,24 +79,19 @@ trait SplSubjectEnforcer
      */
     private function contrastDataChanged(&$changeAdd, &$changeDelete, $key, $oldVal, $newVal)
     {
-        if (is_array($newVal)) {
-            $newValArr = $newVal;
-        } else if (strpos($newVal, ',') !== false) {
-            $newValArr = explode(',', $newVal);
-            $oldVal = explode(',', $oldVal);
-        } else {
-            return;
-        }
+
+        $newValArr = $this->dealValFormat($newVal);
+        $oldValArr = $this->dealValFormat($oldVal);
 
         // 获取两个数组不同的元素array_diff,是取第一数组存在，第二个数组不存在值
-        $diff = array_merge(array_diff($oldVal, $newValArr), array_diff($newValArr, $oldVal));
+        $diff = array_merge(array_diff($oldValArr, $newValArr), array_diff($newValArr, $oldValArr));
 
         if (empty($diff)) {
             return;
         }
 
         foreach ($diff as $item) {
-            if (in_array($item, $oldVal)) {
+            if (in_array($item, $oldValArr)) {
                 // 老数据存在，新数据不存在，被删除
                 $changeDelete[$key][] = $item;
             } else {
@@ -104,6 +120,7 @@ trait SplSubjectEnforcer
             if (in_array($newKey, self::$splJsonFields)) {
                 $newJsonFields = json_decode($newValue, true);
                 $oldJsonFields = json_decode($old[$newKey] ?? '{}', true);
+
                 foreach ($newJsonFields as $newJsonKey => $newJsonValue) {
                     if (
                         !isset($oldJsonFields[$newJsonKey])
