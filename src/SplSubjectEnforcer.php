@@ -127,7 +127,8 @@ trait SplSubjectEnforcer
                         || $oldJsonFields[$newJsonKey] != $newJsonValue
                     ) {
                         $changed[$newJsonKey] = $newJsonValue;
-                        $this->contrastDataChanged($changeAdd, $changeDelete, $newJsonKey, $oldJsonFields[$newJsonKey], $newJsonValue);
+                        $oldJsonValue = $oldJsonFields[$newJsonKey] ?? [];
+                        $this->contrastDataChanged($changeAdd, $changeDelete, $newJsonKey, $oldJsonValue, $newJsonValue);
                     }
                 }
                 continue;
