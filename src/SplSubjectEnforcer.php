@@ -157,14 +157,23 @@ trait SplSubjectEnforcer
     }
 
     /**
-     * @inheritDoc
+     * @return void
+     * @throws \Exception
      */
     public function notify()
     {
+        $errors = [];
         foreach ($this->observers as $observer) {
-            $observer->update($this);
+            try {
+                $observer->update($this);
+            } catch (\Exception $e) {
+                $errors[] = sprintf("%s:%d  %s\r\n%s", $e->getFile(), $e->getLine(), $e->getMessage(), $e->getTraceAsString());
+            }
         }
         $this->clean();
+        if (!empty($errors)) {
+            throw new \Exception(implode('\n', $errors));
+        }
     }
 
     /**
