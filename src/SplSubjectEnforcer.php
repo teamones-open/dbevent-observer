@@ -57,6 +57,12 @@ trait SplSubjectEnforcer
     {
         if (!empty($val)) {
             if (is_array($val)) {
+                foreach ($val as &$item) {
+                    if (is_array($item)) {
+                        // 如果是多维数组转换成字符串处理
+                        $item = json_encode($item);
+                    }
+                }
                 return $val;
             } else if (strpos($val, ',') !== false) {
                 return explode(',', $val);
@@ -65,6 +71,25 @@ trait SplSubjectEnforcer
             }
         } else {
             return [];
+        }
+    }
+
+    /**
+     * 如果是json字符串，转换成数组
+     * @param $str
+     * @param $assoc
+     * @return mixed|string
+     */
+    private function decodeIfJson($str, $assoc = true)
+    {
+        if (!is_string($str)) {
+            return $str;
+        }
+        $data = json_decode($str, $assoc);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $data;
+        } else {
+            return $str;
         }
     }
 
@@ -93,10 +118,10 @@ trait SplSubjectEnforcer
         foreach ($diff as $item) {
             if (in_array($item, $oldValArr)) {
                 // 老数据存在，新数据不存在，被删除
-                $changeDelete[$key][] = $item;
+                $changeDelete[$key][] = $this->decodeIfJson($item);
             } else {
                 // 老数据不存在，新数据存在，新增
-                $changeAdd[$key][] = $item;
+                $changeAdd[$key][] = $this->decodeIfJson($item);
             }
         }
     }
